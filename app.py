@@ -7,8 +7,7 @@ import interface as ui
 # 1. Estética
 ui.configurar_estetica()
 
-# 2. CACHE DE DADOS (O segredo da velocidade)
-# O app só vai ao Google Sheets se o cache for limpo após gravar/excluir
+# 2. CACHE DE DADOS
 @st.cache_data(show_spinner="Carregando dados...")
 def carregar_registros_cache():
     return db.listar_registros()
@@ -17,8 +16,13 @@ def carregar_registros_cache():
 def carregar_configuracoes():
     return db.buscar_dados()
 
+# --- INICIALIZAÇÃO DO ESTADO ---
 if 'pagina' not in st.session_state:
     st.session_state.pagina = 'novo'
+
+# Contador para resetar a seleção da tabela após excluir
+if 'contador_tabela' not in st.session_state:
+    st.session_state.contador_tabela = 0
 
 # --- FUNÇÕES DE AÇÃO ---
 
@@ -33,18 +37,24 @@ def acao_gravar():
             db.salvar_registro([datetime.now().strftime("%d/%m/%Y %H:%M:%S"), prof, mot, ", ".join(alu), desc])
             st.session_state["mul_alu"] = []
             st.session_state["txt_desc"] = ""
-            st.cache_data.clear() # Limpa o cache para forçar nova leitura após gravar
+            st.cache_data.clear() 
             st.toast("✅ Gravado!", icon="🎉")
         except Exception as e:
             st.error(f"Erro: {e}")
 
 def acao_excluir():
-    selecao = st.session_state.get("tabela_principal", {}).get("selection", {}).get("rows", [])
+    chave_atual = f"tabela_{st.session_state.contador_tabela}"
+    selecao = st.session_state.get(chave_atual, {}).get("selection", {}).get("rows", [])
+    
     if selecao:
         try:
             indice = selecao[0]
             db.excluir_registro(indice)
-            st.cache_data.clear() # Limpa o cache para a linha sumir da tela na hora
+            st.cache_data.clear() 
+            
+            # Muda a chave para a tabela "limpar" a seleção
+            st.session_state.contador_tabela += 1
+            
             st.toast("🗑️ Excluído!", icon="✅")
         except Exception as e:
             st.error(f"Erro: {e}")
@@ -52,10 +62,8 @@ def acao_excluir():
 # --- INTERFACE ---
 
 try:
-    # Busca configurações (Professores/Alunos) - Rápido via Cache
     lista_prof, lista_mot, lista_alu = carregar_configuracoes()
 
-    # Layout Cabeçalho
     col_tit, b1, b2, b3, b4, b_save = st.columns([0.28, 0.14, 0.14, 0.14, 0.14, 0.16])
 
     with col_tit:
@@ -68,8 +76,8 @@ try:
         if st.button("🔍 Consultar", use_container_width=True):
             st.session_state.pagina = 'consultar'; st.rerun()
     with b4:
-        # Pega a seleção da tabela sem recarregar o banco de dados
-        selecao_viva = st.session_state.get("tabela_principal", {}).get("selection", {}).get("rows", [])
+        chave_dinamica = f"tabela_{st.session_state.contador_tabela}"
+        selecao_viva = st.session_state.get(chave_dinamica, {}).get("selection", {}).get("rows", [])
         pode_excluir = (st.session_state.pagina == 'consultar' and len(selecao_viva) > 0)
         
         st.button("❌ Excluir", 
@@ -97,12 +105,12 @@ try:
             st.markdown("### 🎓 Alunos envolvidos")
             st.multiselect("A", options=lista_alu, key="mul_alu", label_visibility="collapsed")
             st.markdown("### 📄 Descrição")
-            st.text_area("D", placeholder="Relato...", height=300, key="txt_desc", label_visibility="collapsed")
+            # AJUSTADO: height de 300 para 150 (50% do tamanho)
+            st.text_area("D", placeholder="Relato...", height=150, key="txt_desc", label_visibility="collapsed")
 
     elif st.session_state.pagina == 'consultar':
         st.markdown("### 🔍 Histórico de Registros")
         
-        # USA O CACHE AQUI - Isso remove a lentidão da piscada
         dados_tabela = carregar_registros_cache()
         df = pd.DataFrame(dados_tabela)
 
@@ -113,7 +121,7 @@ try:
                 hide_index=True, 
                 selection_mode="single-row", 
                 on_select="rerun",
-                key="tabela_principal" 
+                key=f"tabela_{st.session_state.contador_tabela}" 
             )
         else:
             st.info("Nenhum registro encontrado.")
