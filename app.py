@@ -122,10 +122,9 @@ try:
                 selection_mode="single-row", 
                 on_select="rerun",
                 key=f"tabela_{st.session_state.contador_tabela}" 
-            )
+            ) 
         else:
             st.info("Nenhum registro encontrado.")
 
 except Exception as e:
     st.error(f"Erro: {e}")
-    
