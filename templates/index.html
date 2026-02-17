@@ -1,42 +1,193 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Ocorrências</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #333; text-align: center; }
-        label { display: block; margin-top: 10px; color: #666; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 8px; margin-top: 20px; font-size: 18px; cursor: pointer; transition: transform 0.2s; }
-        button:active { transform: scale(0.95); background-color: #218838; }
-        .btn-consulta { background-color: #007bff; margin-top: 10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistema Escolar v1</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; margin: 0; padding: 4px; font-family: sans-serif; }
+    .container-fluid { padding: 5px !important; }
+    
+    /* Topo do sistema */
+    .sessao-0 { margin: 0 0 8px 0; padding: 10px; border-radius: 10px; border: 1px solid #dee2e6; background: white; }
+    
+    /* Painel Principal */
+    .painel-unificado { background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; }
+    
+    /* Estrutura de Colunas Desktop */
+    .d-flex-mobile { display: flex; }
+    .col-esquerda { width: 22%; border-right: 1px solid #eee; padding-right: 15px; }
+    .col-direita { width: 78%; padding-left: 15px; }
+    
+    .divisor-horizontal { border-bottom: 1px solid #eee; margin-bottom: 12px; padding-bottom: 8px; }
+    .form-label { font-weight: bold; font-size: 0.95rem; }
+
+    /* Ajustes TomSelect (Alunos) */
+    .ts-wrapper.multi .ts-control>div {
+      background-color: #ff4d4d !important;
+      color: white !important;
+      border-radius: 5px !important;
+      padding: 2px 25px 2px 8px !important;
+      margin: 2px 0.5% !important;
+      width: 48% !important; /* Aumentado para melhor leitura no celular */
+      display: inline-block !important;
+      position: relative !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+
+    .ts-control {
+      min-height: 200px !important; /* Reduzido o mínimo para caber melhor no celular */
+      max-height: 460px !important;
+      overflow-y: auto !important;
+      border: 1px solid #0d6efd !important;
+    }
+
+    .textarea-relato { height: 200px !important; resize: none; border: 1px solid #dee2e6; }
+
+    /* ======================================================
+       AJUSTES PARA CELULAR (RESPONSIVIDADE) 
+       ====================================================== */
+    @media (max-width: 768px) {
+      .d-flex-mobile { flex-direction: column !important; }
+      .col-esquerda, .col-direita { width: 100% !important; border-right: none; padding: 0; }
+      
+      /* Ajusta os botões do topo para não sumirem */
+      .sessao-0 { flex-wrap: wrap; justify-content: center; }
+      .sessao-0 h5 { width: 100%; text-align: center; margin-bottom: 10px !important; }
+      .ms-auto { margin-left: 0 !important; width: 100%; justify-content: center; flex-wrap: wrap; }
+      .btn-sm { margin-bottom: 5px; flex-grow: 1; }
+
+      /* Ajusta o TomSelect para o dedo */
+      .ts-wrapper.multi .ts-control>div { width: 98% !important; margin: 2px 1% !important; }
+      .ts-control { min-height: 150px !important; }
+      .textarea-relato { height: 150px !important; }
+      
+      /* Turma em linha cheia */
+      #selectTurma { width: 100% !important; margin-top: 5px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container animate__animated animate__fadeIn">
-        <h2>Nova Ocorrência</h2>
-        <form action="/salvar" method="post">
-            <label>Aluno:</label>
-            <input type="text" name="aluno" required placeholder="Nome do aluno">
-            
-            <label>Turma:</label>
-            <select name="turma">
-                <option value="6A">6º Ano A</option>
-                <option value="7A">7º Ano A</option>
-                <option value="8A">8º Ano A</option>
+  <div class="container-fluid">
+    <form id="formOcorrencia">
+      <div class="d-flex align-items-center bg-white shadow-sm sessao-0">
+        <h5 class="mb-0 fw-bold">📝 Sistema Escolar</h5>
+        <div class="ms-auto d-flex">
+          <button type="button" class="btn btn-outline-secondary btn-sm mx-1" onclick="consultar()">🔍 Consultar</button>
+          <button type="button" class="btn btn-outline-primary btn-sm mx-1" onclick="location.reload()">📄 Novo</button>
+          <button type="button" class="btn btn-primary btn-sm mx-1" onclick="gravarDados()">💾 Gravar</button>
+        </div>
+      </div>
+
+      <div class="painel-unificado">
+        <div class="d-flex d-flex-mobile">
+          <div class="col-esquerda">
+            <label class="form-label">👤 Professor</label>
+            <select name="professor" class="form-select mb-3">
+              <option value="">Selecione...</option>
+              {% if dados and dados.professores %} 
+                {% for p in dados.professores %}
+                  <option value="{{p}}">{{p}}</option>
+                {% endfor %} 
+              {% endif %}
             </select>
+            
+            <label class="form-label">🔖 Motivo</label>
+            <div id="container-motivos" class="mb-3">
+              {% if dados and dados.motivos %} 
+                {% for m in dados.motivos %}
+                  <div class="form-check small mb-1">
+                    <input class="form-check-input" type="radio" name="motivo" value="{{m}}" id="m{{loop.index}}" />
+                    <label class="form-check-label" for="m{{loop.index}}">{{m}}</label>
+                  </div>
+                {% endfor %} 
+              {% endif %}
+            </div>
+          </div>
 
-            <label>Ocorrência:</label>
-            <textarea name="descricao" rows="4" placeholder="Relate o ocorrido..."></textarea>
+          <div class="col-direita">
+            <div class="divisor-horizontal">
+              <label class="form-label me-2">🏫 Turma</label>
+              <select id="selectTurma" name="turma" class="form-select d-inline-block w-auto" onchange="atualizarAlunos()">
+                <option value="">Selecione...</option>
+                {% if dados and dados.turmas %} 
+                  {% for t in dados.turmas.keys() %}
+                    <option value="{{t}}">{{t}}</option>
+                  {% endfor %} 
+                {% endif %}
+              </select>
+            </div>
+            
+            <div class="row g-2">
+              <div class="col-md-7" style="position: relative">
+                <label class="form-label">🎓 Alunos Envolvidos</label>
+                <select id="selectAlunos" name="alunos" multiple placeholder="Selecione os alunos..."></select>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">📄 Descrição do Relato</label>
+                <textarea name="descricao" class="form-control textarea-relato"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 
-            <button type="submit" class="animate__animated animate__pulse animate__infinite">Salvar Registro</button>
-        </form>
-        <button onclick="location.href='/consultar'" class="btn-consulta">Ver Consultas</button>
-    </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+  <script>
+    const dadosTurmas = {{ (dados.turmas if dados and dados.turmas else {}) | tojson | safe }};
+
+    var tomAlunos = new TomSelect("#selectAlunos", {
+      plugins: ['remove_button'],
+      maxOptions: null,
+      onDropdownOpen: function () {
+        this.positionDropdown();
+      }
+    });
+
+    function atualizarAlunos() {
+      const t = document.getElementById('selectTurma').value;
+      tomAlunos.clear();
+      tomAlunos.clearOptions();
+      if (dadosTurmas[t]) {
+        const formatados = dadosTurmas[t].map(n => {
+          const limpo = n.replace(/\s*-\s*/g, '-').trim();
+          return { value: limpo, text: limpo };
+        });
+        tomAlunos.addOptions(formatados);
+      }
+    }
+
+    function consultar() { window.location.href = '/consultar'; }
+
+    function gravarDados() {
+      const form = document.getElementById('formOcorrencia');
+      const fd = new FormData(form);
+      if (!fd.get('professor') || !fd.get('turma') || !fd.get('alunos')) {
+        alert("⚠️ Por favor, preencha Professor, Turma e Alunos!");
+        return;
+      }
+      fetch('/gravar', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "sucesso") {
+            alert("✅ Gravado com sucesso!");
+            location.reload();
+          } else {
+            alert("❌ Erro ao gravar: " + (data.mensagem || "Erro desconhecido"));
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Erro de conexão.");
+        });
+    }
+  </script>
 </body>
 </html>
-

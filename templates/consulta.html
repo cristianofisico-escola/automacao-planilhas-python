@@ -2,73 +2,233 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultar Ocorrências</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Consulta de Ocorrências</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f4f9; }
-        .topo { display: flex; justify-content: space-between; align-items: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
-        th { background-color: #007bff; color: white; cursor: pointer; }
-        th:hover { background-color: #0056b3; }
-        tr:hover { background-color: #f1f1f1; }
-        .btn-voltar { padding: 10px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }
+        body { background-color: #f8f9fa; padding: 10px; font-family: sans-serif; }
+        .tabela-container { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* --- AJUSTE PARA TABELA NO CELULAR --- */
+        .wrapper-tabela {
+            overflow-x: auto; /* Permite deslizar a tabela no celular */
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
+        }
+
+        .table { min-width: 1000px; table-layout: fixed; } /* Força a largura mínima para não esmagar dados */
+        .col-data { width: 130px; }
+        .col-prof { width: 120px; }
+        .col-turma { width: 70px; }
+        .col-motivo { width: 120px; }
+        .col-alunos { width: 250px; } 
+        .col-relato { width: 400px; } 
+        .col-acoes { width: 100px; }
+
+        .table td { vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cell-break { white-space: normal !important; word-wrap: break-word; font-size: 0.85rem; line-height: 1.2; }
+
+        /* --- TAGS DO MODAL (ADAPTADO) --- */
+        .ts-wrapper.multi .ts-control > div { 
+            background-color: #dc3545 !important; 
+            color: white !important; 
+            border-radius: 4px !important;
+            padding: 2px 25px 2px 8px !important;
+            width: 48% !important; /* 2 por linha no celular/modal */
+            margin: 2px 1% !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            position: relative !important;
+            display: inline-block !important;
+        }
+
+        #edit-descricao { min-height: 150px !important; resize: vertical; font-size: 16px; }
+        .ts-dropdown { z-index: 2000 !important; }
+
+        /* --- RESPONSIVIDADE DO MODAL --- */
+        @media (max-width: 600px) {
+            h2 { font-size: 1.2rem; }
+            .tabela-container { padding: 8px; }
+            .modal-dialog { margin: 0.5rem; }
+            .ts-wrapper.multi .ts-control > div { width: 98% !important; } /* 1 por linha no celular bem pequeno */
+        }
     </style>
 </head>
 <body>
-    <div class="topo">
-        <h2>Registros</h2>
-        <a href="/" class="btn-voltar">Voltar</a>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">📋 Ocorrências</h2>
+        <button class="btn btn-secondary btn-sm" onclick="window.location.href='/'">⬅ Voltar</button>
     </div>
 
-    <table id="tabelaDados">
-        <thead>
-            <tr>
-                <th onclick="ordenar(0)">Data ↕</th>
-                <th onclick="ordenar(1)">Aluno ↕</th>
-                <th onclick="ordenar(2)">Turma ↕</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in registros %}
-            <tr>
-                <td>{{ r[1] }}</td> <td>{{ r[2] }}</td> <td>{{ r[3] }}</td> </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="tabela-container">
+        <small class="text-muted d-block d-md-none mb-2">⬅ Deslize para os lados para ver mais ➡</small>
+        <div class="wrapper-tabela">
+            <table class="table table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="col-data">Data</th>
+                        <th class="col-prof">Prof.</th>
+                        <th class="col-turma">Turma</th>
+                        <th class="col-motivo">Motivo</th>
+                        <th class="col-alunos">Alunos</th>
+                        <th class="col-relato">Relato</th>
+                        <th class="col-acoes">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in registros %}
+                    <tr>
+                        <td>{{ reg[0] }}</td>
+                        <td>{{ reg[1] }}</td>
+                        <td class="text-center">{{ reg[2] }}</td>
+                        <td>{{ reg[3] }}</td>
+                        <td class="cell-break">{{ reg[4] }}</td>
+                        <td class="cell-break">{{ reg[5] }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-warning btn-sm" onclick='abrirEdicao({{ loop.index0 }}, {{ reg | tojson | safe }})'>✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletar({{ loop.index0 }})">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-    <script>
-    function ordenar(n) {
-      var table = document.getElementById("tabelaDados");
-      var rows = table.rows;
-      var switching = true;
-      var dir = "asc"; 
-      var switchcount = 0;
-      while (switching) {
-        switching = false;
-        for (var i = 1; i < (rows.length - 1); i++) {
-          var shouldSwitch = false;
-          var x = rows[i].getElementsByTagName("TD")[n];
-          var y = rows[i + 1].getElementsByTagName("TD")[n];
-          if (dir == "asc") {
-            if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-              shouldSwitch = true; break;
-            }
-          } else if (dir == "desc") {
-            if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-              shouldSwitch = true; break;
-            }
-          }
-        }
-        if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-          switchcount ++;      
-        } else {
-          if (switchcount == 0 && dir == "asc") { dir = "desc"; switching = true; }
-        }
-      }
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold">✏️ Editar Registro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditar">
+                    <input type="hidden" id="edit-id" name="id">
+                    <input type="hidden" id="edit-data-original" name="data_original">
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="fw-bold small">Professor</label>
+                            <input type="text" id="edit-professor" name="professor" class="form-control form-control-sm bg-light" readonly>
+                        </div>
+                        <div class="col-6">
+                            <label class="fw-bold small">Turma</label>
+                            <input type="text" id="edit-turma" name="turma" class="form-control form-control-sm bg-light" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small">Motivo:</label><br>
+                        <div class="d-flex flex-wrap gap-2 border p-2 rounded">
+                            {% for m in lista_motivos %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="motivo" value="{{ m }}" id="m-{{ loop.index }}">
+                                <label class="form-check-label small" for="m-{{ loop.index }}">{{ m }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small">Alunos Envolvidos:</label>
+                        <div id="wrapper-alunos"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small">Relato do Professor:</label>
+                        <textarea id="edit-descricao" name="descricao" class="form-control"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Sair</button>
+                <button type="button" id="btnSalvar" class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+    const turmasAlunos = {{ turmas | tojson | safe }};
+    const modalElement = document.getElementById('modalEditar');
+    const modalEdicao = new bootstrap.Modal(modalElement);
+    let tomInstance = null;
+    let dadosTemp = null;
+
+    function limparNome(nome) {
+        return nome ? nome.replace(/\s*-\s*/g, '-').trim() : "";
     }
-    </script>
+
+    function abrirEdicao(id, dados) {
+        dadosTemp = dados;
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-data-original').value = dados[0];
+        document.getElementById('edit-professor').value = dados[1];
+        document.getElementById('edit-turma').value = dados[2].trim();
+        document.getElementById('edit-descricao').value = dados[5];
+
+        document.querySelectorAll('input[name="motivo"]').forEach(r => {
+            r.checked = (r.value.trim() === dados[3].trim());
+        });
+
+        document.getElementById('wrapper-alunos').innerHTML = '<select id="edit-alunos-select" name="alunos" multiple></select>';
+        modalEdicao.show();
+    }
+
+    modalElement.addEventListener('shown.bs.modal', function () {
+        if (tomInstance) tomInstance.destroy();
+        const select = document.getElementById('edit-alunos-select');
+        const tChave = dadosTemp[2].trim();
+        
+        const jaSelecionados = dadosTemp[4] ? 
+            dadosTemp[4].split(',').map(s => limparNome(s)) : [];
+
+        if (turmasAlunos[tChave]) {
+            turmasAlunos[tChave].forEach(aluno => {
+                const aLimpo = limparNome(aluno);
+                let opt = new Option(aLimpo, aLimpo);
+                if (jaSelecionados.includes(aLimpo)) opt.selected = true;
+                select.add(opt);
+            });
+        }
+
+        tomInstance = new TomSelect("#edit-alunos-select", {
+            plugins: ['remove_button'],
+            dropdownParent: 'body',
+            placeholder: "Adicionar alunos..."
+        });
+    });
+
+    function salvarEdicao() {
+        const btn = document.getElementById('btnSalvar');
+        btn.disabled = true;
+        const formData = new FormData(document.getElementById('formEditar'));
+        
+        fetch('/editar/' + document.getElementById('edit-id').value, {
+            method: 'POST',
+            body: formData
+        }).then(() => {
+            modalEdicao.hide();
+            setTimeout(() => { location.reload(); }, 400);
+        });
+    }
+
+    function deletar(id) {
+        if(confirm("Deseja excluir permanentemente este registro?")) {
+            fetch('/excluir/' + id, { method: 'POST' }).then(() => location.reload());
+        }
+    }
+</script>
 </body>
 </html>
