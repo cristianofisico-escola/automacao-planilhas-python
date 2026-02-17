@@ -1,15 +1,19 @@
 #!/bin/bash
 while true
 do
-  HORA=$(date +'%H:%M:%S')
-  echo "-----------------------------------------------------"
-  echo "[$HORA] 🛡️  Sentinela: Iniciando conferência de backup..."
+  # Define o fuso horário para Brasília/São Paulo
+  export TZ="America/Sao_Paulo"
   
-  # Tenta rodar o seu script de salvar
+  HORA=$(date +'%H:%M:%S')
+  PROXIMA=$(date -d "+10 minutes" +'%H:%M:%S')
+  
+  echo "-----------------------------------------------------"
+  echo "[$HORA] 🇧🇷  Sentinela (BR): Iniciando backup..."
+  
   ./salvar.sh
   
   echo "[$HORA] ✅ Conferência finalizada."
-  echo "[$HORA] ⏳ Próxima verificação em 10 minutos (às $(date -d "+10 minutes" +%H:%M:%S))."
+  echo "[$HORA] ⏳ Próxima verificação às $PROXIMA."
   echo "-----------------------------------------------------"
   
   sleep 600
