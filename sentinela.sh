@@ -1,8 +1,16 @@
 #!/bin/bash
 while true
 do
-  echo "--- Iniciando backup automático ---"
+  HORA=$(date +'%H:%M:%S')
+  echo "-----------------------------------------------------"
+  echo "[$HORA] 🛡️  Sentinela: Iniciando conferência de backup..."
+  
+  # Tenta rodar o seu script de salvar
   ./salvar.sh
-  echo "--- Backup realizado. Próxima conferência em 10 minutos ---"
+  
+  echo "[$HORA] ✅ Conferência finalizada."
+  echo "[$HORA] ⏳ Próxima verificação em 10 minutos (às $(date -d "+10 minutes" +%H:%M:%S))."
+  echo "-----------------------------------------------------"
+  
   sleep 600
 done
