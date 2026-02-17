@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Ocorrências</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #333; text-align: center; }
+        label { display: block; margin-top: 10px; color: #666; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 8px; margin-top: 20px; font-size: 18px; cursor: pointer; transition: transform 0.2s; }
+        button:active { transform: scale(0.95); background-color: #218838; }
+        .btn-consulta { background-color: #007bff; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container animate__animated animate__fadeIn">
+        <h2>Nova Ocorrência</h2>
+        <form action="/salvar" method="post">
+            <label>Aluno:</label>
+            <input type="text" name="aluno" required placeholder="Nome do aluno">
+            
+            <label>Turma:</label>
+            <select name="turma">
+                <option value="6A">6º Ano A</option>
+                <option value="7A">7º Ano A</option>
+                <option value="8A">8º Ano A</option>
+            </select>
+
+            <label>Ocorrência:</label>
+            <textarea name="descricao" rows="4" placeholder="Relate o ocorrido..."></textarea>
+
+            <button type="submit" class="animate__animated animate__pulse animate__infinite">Salvar Registro</button>
+        </form>
+        <button onclick="location.href='/consultar'" class="btn-consulta">Ver Consultas</button>
+    </div>
+</body>
+</html>
