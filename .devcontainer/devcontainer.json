@@ -1,7 +1,0 @@
-"portsAttributes": {
-    "5000": {
-        "label": "App Flask",
-        "onAutoForward": "notify",
-        "visibility": "public"
-    }
-}
